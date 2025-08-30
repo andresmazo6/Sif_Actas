@@ -1,8 +1,11 @@
 // URL del backend en Apps Script (reemplaza TU_URL cuando lo tengas)
 const GAS_URL = "https://script.google.com/macros/s/AKfycbyMqxg4HLB4DMpInjop4ruu2Kr5jBtIuTzVjpcURfQayWAoFHwMivNBHCHhvt2YbzH82w/exec";
 // ========================================
-
-let activitiesData = []; // Guardamos la data global para filtrado y modal
+// CONFIGURACIÓN DEL BACKEND
+// ========================================
+const GAS_URL = "https://script.google.com/macros/s/TU_URL/exec";
+let activitiesData = []; // Data completa
+let contractsList = [];  // Lista de contratos para filtros
 
 // ========================================
 // NAVEGACIÓN ENTRE PESTAÑAS
@@ -16,7 +19,7 @@ function showTab(tab) {
 }
 
 // ========================================
-// CONSULTA DE ACTIVIDADES
+// CARGA DE ACTIVIDADES
 // ========================================
 async function loadActivities() {
   const container = document.getElementById("content");
@@ -27,29 +30,28 @@ async function loadActivities() {
     const j = await r.json();
     if (!j.ok) throw new Error(j.error);
 
-    activitiesData = j.rows; // Guardamos todas
+    activitiesData = j.rows;
+    contractsList = [...new Set(activitiesData.map(a => a.contract_id))]; // contratos únicos
 
-    // Pintamos buscador + tabla vacía
+    // Pintamos filtros + tabla vacía
     container.innerHTML = `
       <h2>Consulta de Actividades</h2>
       <div id="filterBar">
-        <input type="text" id="filterInput" placeholder="Filtrar por palabra clave...">
+        <label>Contrato: 
+          <select id="filterContract">
+            <option value="">Todos</option>
+            ${contractsList.map(c => `<option value="${c}">${c}</option>`).join("")}
+          </select>
+        </label>
+        <label>Ítem desde: <input type="text" id="filterItemFrom" size="5"></label>
+        <label>Ítem hasta: <input type="text" id="filterItemTo" size="5"></label>
+        <button onclick="applyFilters()">Aplicar</button>
+        <button onclick="clearFilters()">Limpiar</button>
       </div>
       <div id="tableWrapper">
         <div id="tableContainer"></div>
       </div>
     `;
-
-    // Activamos buscador
-    document.getElementById("filterInput").addEventListener("input", e => {
-      const term = e.target.value.toLowerCase();
-      const filtered = activitiesData.filter(a =>
-        (a.item_code || "").toLowerCase().includes(term) ||
-        (a.description || "").toLowerCase().includes(term) ||
-        (a.unit || "").toLowerCase().includes(term)
-      );
-      renderActivities(filtered);
-    });
 
     // Render inicial con todos
     renderActivities(activitiesData);
@@ -59,7 +61,9 @@ async function loadActivities() {
   }
 }
 
-// Renderizar tabla principal de actividades
+// ========================================
+// RENDER TABLA PRINCIPAL
+// ========================================
 function renderActivities(data) {
   const container = document.getElementById("tableContainer");
 
@@ -68,6 +72,7 @@ function renderActivities(data) {
       <thead>
         <tr>
           <th>#</th>
+          <th>Contrato</th>
           <th>Ítem</th>
           <th>Descripción</th>
           <th>Unidad</th>
@@ -91,6 +96,7 @@ function renderActivities(data) {
     html += `
       <tr>
         <td>${i + 1}</td>
+        <td>${a.contract_id || ""}</td>
         <td>${a.item_code || ""}</td>
         <td style="text-align:left">${a.description || ""}</td>
         <td>${a.unit || ""}</td>
@@ -114,6 +120,31 @@ function renderActivities(data) {
 }
 
 // ========================================
+// FILTROS AVANZADOS
+// ========================================
+function applyFilters() {
+  const cId = document.getElementById("filterContract").value;
+  const from = document.getElementById("filterItemFrom").value;
+  const to = document.getElementById("filterItemTo").value;
+
+  let filtered = [...activitiesData];
+
+  if (cId) filtered = filtered.filter(a => a.contract_id === cId);
+
+  if (from) filtered = filtered.filter(a => a.item_code >= from);
+  if (to)   filtered = filtered.filter(a => a.item_code <= to);
+
+  renderActivities(filtered);
+}
+
+function clearFilters() {
+  document.getElementById("filterContract").value = "";
+  document.getElementById("filterItemFrom").value = "";
+  document.getElementById("filterItemTo").value = "";
+  renderActivities(activitiesData);
+}
+
+// ========================================
 // MODAL DE ACTAS
 // ========================================
 async function showActas(activityId) {
@@ -121,13 +152,11 @@ async function showActas(activityId) {
   const summary = document.getElementById("modal-summary");
   const body = document.getElementById("modal-body");
 
-  // Buscar la actividad seleccionada
   const act = activitiesData.find(a => a.activity_id === activityId);
   if (!act) return;
 
-  // Resumen numérico
   summary.innerHTML = `
-    <p><b>Ítem:</b> ${act.item_code} | <b>Descripción:</b> ${act.description}</p>
+    <p><b>Contrato:</b> ${act.contract_id} | <b>Ítem:</b> ${act.item_code} | <b>Descripción:</b> ${act.description}</p>
     <p>
       <b>Inicial:</b> ${act.initial_qty} (${act.initial_value}) |
       <b>Ejecutado:</b> ${act.executed_qty} (${act.executed_value}) |
@@ -136,7 +165,6 @@ async function showActas(activityId) {
     </p>
   `;
 
-  // Actas desde backend
   body.innerHTML = "<p>Cargando actas...</p>";
   modal.style.display = "block";
 
@@ -150,7 +178,6 @@ async function showActas(activityId) {
       return;
     }
 
-    // Construir tabla de actas
     let html = `
       <table>
         <thead>
@@ -181,13 +208,12 @@ async function showActas(activityId) {
   }
 }
 
-// Cerrar modal
 function closeModal() {
   document.getElementById("modal").style.display = "none";
 }
 
 // ========================================
-// TEST DE CONEXIÓN
+// TEST PING
 // ========================================
 async function testPing() {
   const container = document.getElementById("content");
