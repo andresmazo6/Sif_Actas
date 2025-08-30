@@ -1,5 +1,5 @@
 // URL del backend en Apps Script (reemplaza TU_URL cuando lo tengas)
-const GAS_URL = "https://script.google.com/macros/s/AKfycby750kQIInqa87YPAXXDlnVXtG_1wfdBaSpAMXdQCePt-3gkupBUCg7HlW4xi_AfwP9sw/exec";
+const GAS_URL = "https://script.google.com/macros/s/AKfycbyMqxg4HLB4DMpInjop4ruu2Kr5jBtIuTzVjpcURfQayWAoFHwMivNBHCHhvt2YbzH82w/exec";
 let activitiesData = []; // Guardamos la data global para filtrado y modal
 
 // ========================================
