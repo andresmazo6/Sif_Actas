@@ -7,12 +7,29 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <h1>Seguimiento de Actas</h1>
-  <p>Prueba inicial del frontend desplegado con Netlify.</p>
+  <!-- Encabezado institucional -->
+  <header>
+    <h1>Seguimiento de Actas</h1>
+    <p>Secretaría de Infraestructura Física · Alcaldía de Medellín</p>
+  </header>
 
-  <button onclick="testPing()">Probar conexión</button>
-  <pre id="output"></pre>
+  <!-- Navegación -->
+  <nav>
+    <button onclick="showTab('consulta')">Consulta de Actividades</button>
+    <button onclick="testPing()">Ping backend</button>
+  </nav>
 
+  <!-- Contenido dinámico -->
+  <main id="content">
+    <p>Bienvenido. Selecciona una opción del menú para comenzar.</p>
+  </main>
+
+  <!-- Pie de página -->
+  <footer>
+    © 2025 Secretaría de Infraestructura Física - Alcaldía de Medellín
+  </footer>
+
+  <!-- Lógica frontend -->
   <script src="app.js"></script>
 </body>
 </html>
