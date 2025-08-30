@@ -117,11 +117,9 @@ function requireRoleOrThrow_(roles){
 /****************************************************
  * ROUTER WEBAPP
  ****************************************************/
+// Simplificado: solo setMimeType, sin .setHeader()
 function cors_(out){
-  return out.setMimeType(ContentService.MimeType.JSON)
-    .setHeader("Access-Control-Allow-Origin","*")
-    .setHeader("Access-Control-Allow-Methods","GET, POST, OPTIONS")
-    .setHeader("Access-Control-Allow-Headers","Content-Type");
+  return out.setMimeType(ContentService.MimeType.JSON);
 }
 function doOptions(e){ return cors_(ContentService.createTextOutput("")); }
 
