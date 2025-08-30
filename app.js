@@ -1,10 +1,11 @@
 // URL del backend en Apps Script (reemplaza TU_URL cuando lo tengas)
 const GAS_URL = "https://script.google.com/macros/s/AKfycby750kQIInqa87YPAXXDlnVXtG_1wfdBaSpAMXdQCePt-3gkupBUCg7HlW4xi_AfwP9sw/exec";
-// ========================================
 
-let activitiesData = []; // Guardamos la data para filtrar
+let activitiesData = []; // Guardamos todas las actividades
 
-// Navegación
+// =====================
+// NAVEGACIÓN
+// =====================
 function showTab(tab) {
   if (tab === "consulta") {
     loadActivities();
@@ -13,7 +14,9 @@ function showTab(tab) {
   }
 }
 
-// Cargar actividades
+// =====================
+// CONSULTA DE ACTIVIDADES
+// =====================
 async function loadActivities() {
   const container = document.getElementById("content");
   container.innerHTML = "<p>Cargando actividades...</p>";
@@ -23,24 +26,41 @@ async function loadActivities() {
     const j = await r.json();
     if (!j.ok) throw new Error(j.error);
 
-    activitiesData = j.rows; // Guardamos todas
+    activitiesData = j.rows; // Guardar todas las actividades
 
-    renderActivities(activitiesData); // Dibujar tabla inicial
+    // Pintamos buscador + tabla vacía
+    container.innerHTML = `
+      <h2>Consulta de Actividades</h2>
+      <div id="filterBar">
+        <input type="text" id="filterInput" placeholder="Filtrar por palabra clave...">
+      </div>
+      <div id="tableContainer"></div>
+    `;
+
+    // Activamos buscador
+    document.getElementById("filterInput").addEventListener("input", e => {
+      const term = e.target.value.toLowerCase();
+      const filtered = activitiesData.filter(a =>
+        (a.item_code || "").toLowerCase().includes(term) ||
+        (a.description || "").toLowerCase().includes(term) ||
+        (a.unit || "").toLowerCase().includes(term)
+      );
+      renderActivities(filtered);
+    });
+
+    // Render inicial con todos
+    renderActivities(activitiesData);
 
   } catch (e) {
     container.innerHTML = `<p style="color:red">Error: ${e.message}</p>`;
   }
 }
 
-// Renderizar tabla con filtro
+// Renderizar tabla
 function renderActivities(data) {
-  const container = document.getElementById("content");
+  const container = document.getElementById("tableContainer");
 
   let html = `
-    <h2>Consulta de Actividades</h2>
-    <div id="filterBar">
-      <input type="text" id="filterInput" placeholder="Filtrar por palabra clave...">
-    </div>
     <table>
       <thead>
         <tr>
@@ -86,26 +106,17 @@ function renderActivities(data) {
 
   html += "</tbody></table>";
   container.innerHTML = html;
-
-  // Activar filtro
-  document.getElementById("filterInput").addEventListener("input", e => {
-    const term = e.target.value.toLowerCase();
-    const filtered = activitiesData.filter(a =>
-      (a.item_code || "").toLowerCase().includes(term) ||
-      (a.description || "").toLowerCase().includes(term) ||
-      (a.unit || "").toLowerCase().includes(term)
-    );
-    renderActivities(filtered);
-  });
 }
 
-// Mostrar actas + resumen en modal
+// =====================
+// MODAL DE ACTAS
+// =====================
 async function showActas(activityId) {
   const modal = document.getElementById("modal");
   const summary = document.getElementById("modal-summary");
   const body = document.getElementById("modal-body");
 
-  // Buscar la actividad seleccionada
+  // Buscar actividad
   const act = activitiesData.find(a => a.activity_id === activityId);
   if (!act) return;
 
@@ -120,7 +131,7 @@ async function showActas(activityId) {
     </p>
   `;
 
-  // Actas relacionadas
+  // Actas
   body.innerHTML = "<p>Cargando actas...</p>";
   modal.style.display = "block";
 
@@ -149,12 +160,13 @@ async function showActas(activityId) {
   }
 }
 
-// Cerrar modal
 function closeModal() {
   document.getElementById("modal").style.display = "none";
 }
 
-// Test ping
+// =====================
+// TEST PING
+// =====================
 async function testPing() {
   const container = document.getElementById("content");
   container.innerHTML = "<p>Probando conexión...</p>";
