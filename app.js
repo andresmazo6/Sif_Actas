@@ -1,5 +1,8 @@
 // URL del backend en Apps Script (reemplaza TU_URL cuando lo tengas)
 const GAS_URL = "https://script.google.com/macros/s/AKfycbyMqxg4HLB4DMpInjop4ruu2Kr5jBtIuTzVjpcURfQayWAoFHwMivNBHCHhvt2YbzH82w/exec";
+// ========================================
+
+
 let activitiesData = []; // Guardamos la data global para filtrado y modal
 
 // ========================================
@@ -63,6 +66,7 @@ function renderActivities(data) {
     <table>
       <thead>
         <tr>
+          <th>#</th>
           <th>Ítem</th>
           <th>Descripción</th>
           <th>Unidad</th>
@@ -82,9 +86,10 @@ function renderActivities(data) {
       <tbody>
   `;
 
-  data.forEach(a => {
+  data.forEach((a, i) => {
     html += `
       <tr>
+        <td>${i + 1}</td>
         <td>${a.item_code || ""}</td>
         <td style="text-align:left">${a.description || ""}</td>
         <td>${a.unit || ""}</td>
