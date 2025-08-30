@@ -11,7 +11,7 @@ table {
   margin-top: 1em;
   font-size: 13px;
   line-height: 1.4;
-  table-layout: fixed; /* distribución fija para controlar anchos */
+  table-layout: fixed;
 }
 
 thead th {
@@ -25,7 +25,6 @@ thead th {
   padding: 6px;
 }
 
-/* columnas con bordes */
 td {
   border: 1px solid #ccc;
   padding: 6px;
@@ -41,30 +40,63 @@ td:nth-child(1), th:nth-child(1) {
   width: 40px;
 }
 
-/* columna item_code */
+/* columna contrato */
 td:nth-child(2), th:nth-child(2) {
-  width: 100px;
+  width: 80px;
+}
+
+/* columna item_code */
+td:nth-child(3), th:nth-child(3) {
+  width: 80px;
 }
 
 /* columna descripción */
-td:nth-child(3), th:nth-child(3) {
+td:nth-child(4), th:nth-child(4) {
   text-align: left;
   white-space: normal;
   word-wrap: break-word;
-  width: 400px; /* más ancho aún */
+  width: 400px;
 }
 
-/* filas pares gris claro */
 tbody tr:nth-child(even) {
   background: #f9f9f9;
 }
 
-/* hover */
 tbody tr:hover {
   background: #eef6ff;
 }
 
-/* altura fija filas */
 tbody td {
   height: 38px;
+}
+
+/* ============================= */
+/* FILTROS                       */
+/* ============================= */
+#filterBar {
+  margin-bottom: 12px;
+  padding: 8px;
+  background: #f4f6f8;
+  border-radius: 6px;
+  font-size: 14px;
+}
+#filterBar label {
+  margin-right: 12px;
+}
+#filterBar select,
+#filterBar input {
+  padding: 4px 6px;
+  margin-left: 4px;
+}
+#filterBar button {
+  margin-left: 6px;
+  padding: 5px 10px;
+  background: #F07C00;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+#filterBar button:hover {
+  background: #d96b00;
 }
