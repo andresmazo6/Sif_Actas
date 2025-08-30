@@ -1,11 +1,10 @@
 // URL del backend en Apps Script (reemplaza TU_URL cuando lo tengas)
 const GAS_URL = "https://script.google.com/macros/s/AKfycby750kQIInqa87YPAXXDlnVXtG_1wfdBaSpAMXdQCePt-3gkupBUCg7HlW4xi_AfwP9sw/exec";
+let activitiesData = []; // Guardamos la data global para filtrado y modal
 
-let activitiesData = []; // Guardamos todas las actividades
-
-// =====================
-// NAVEGACIÓN
-// =====================
+// ========================================
+// NAVEGACIÓN ENTRE PESTAÑAS
+// ========================================
 function showTab(tab) {
   if (tab === "consulta") {
     loadActivities();
@@ -14,9 +13,9 @@ function showTab(tab) {
   }
 }
 
-// =====================
+// ========================================
 // CONSULTA DE ACTIVIDADES
-// =====================
+// ========================================
 async function loadActivities() {
   const container = document.getElementById("content");
   container.innerHTML = "<p>Cargando actividades...</p>";
@@ -26,7 +25,7 @@ async function loadActivities() {
     const j = await r.json();
     if (!j.ok) throw new Error(j.error);
 
-    activitiesData = j.rows; // Guardar todas las actividades
+    activitiesData = j.rows; // Guardamos todas
 
     // Pintamos buscador + tabla vacía
     container.innerHTML = `
@@ -56,7 +55,7 @@ async function loadActivities() {
   }
 }
 
-// Renderizar tabla
+// Renderizar tabla principal de actividades
 function renderActivities(data) {
   const container = document.getElementById("tableContainer");
 
@@ -108,15 +107,15 @@ function renderActivities(data) {
   container.innerHTML = html;
 }
 
-// =====================
+// ========================================
 // MODAL DE ACTAS
-// =====================
+// ========================================
 async function showActas(activityId) {
   const modal = document.getElementById("modal");
   const summary = document.getElementById("modal-summary");
   const body = document.getElementById("modal-body");
 
-  // Buscar actividad
+  // Buscar la actividad seleccionada
   const act = activitiesData.find(a => a.activity_id === activityId);
   if (!act) return;
 
@@ -131,28 +130,44 @@ async function showActas(activityId) {
     </p>
   `;
 
-  // Actas
+  // Actas desde backend
   body.innerHTML = "<p>Cargando actas...</p>";
   modal.style.display = "block";
 
   try {
-    const r = await fetch(`${GAS_URL}?fn=list_actas`);
+    const r = await fetch(`${GAS_URL}?fn=actas_by_activity&activity_id=${activityId}`);
     const j = await r.json();
     if (!j.ok) throw new Error(j.error);
 
-    const actas = j.rows.filter(a => a.contract_id === act.contract_id);
-
-    if (actas.length === 0) {
+    if (j.rows.length === 0) {
       body.innerHTML = "<p>No hay actas registradas para esta actividad.</p>";
       return;
     }
 
-    let html = "<ul>";
-    actas.forEach(ac => {
-      html += `<li><b>Acta ${ac.acta_no}</b> - ${ac.acta_date} - ${ac.notes || ""}</li>`;
-    });
-    html += "</ul>";
+    // Construir tabla de actas
+    let html = `
+      <table>
+        <thead>
+          <tr>
+            <th>N° Acta</th>
+            <th>Fecha</th>
+            <th>Notas</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
 
+    j.rows.forEach(ac => {
+      html += `
+        <tr>
+          <td>${ac.acta_no || ""}</td>
+          <td>${ac.acta_date || ""}</td>
+          <td style="text-align:left">${ac.notes || ""}</td>
+        </tr>
+      `;
+    });
+
+    html += "</tbody></table>";
     body.innerHTML = html;
 
   } catch (e) {
@@ -160,13 +175,14 @@ async function showActas(activityId) {
   }
 }
 
+// Cerrar modal
 function closeModal() {
   document.getElementById("modal").style.display = "none";
 }
 
-// =====================
-// TEST PING
-// =====================
+// ========================================
+// TEST DE CONEXIÓN
+// ========================================
 async function testPing() {
   const container = document.getElementById("content");
   container.innerHTML = "<p>Probando conexión...</p>";
