@@ -1,6 +1,10 @@
 /* ============================= */
 /* TABLA DE ACTIVIDADES VISUAL   */
 /* ============================= */
+#tableWrapper {
+  overflow-x: auto; /* scroll horizontal si hay muchas columnas */
+}
+
 table {
   border-collapse: collapse;
   width: 100%;
@@ -27,17 +31,27 @@ td {
   padding: 6px;
   text-align: center;
   vertical-align: middle;
-  white-space: nowrap; /* evita que todo se rompa en filas muy grandes */
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* ajustar descripción */
+/* columna índice */
+td:nth-child(1), th:nth-child(1) {
+  width: 40px;
+}
+
+/* columna item_code */
 td:nth-child(2), th:nth-child(2) {
+  width: 100px;
+}
+
+/* columna descripción */
+td:nth-child(3), th:nth-child(3) {
   text-align: left;
   white-space: normal;
   word-wrap: break-word;
-  width: 300px; /* más ancho */
+  width: 400px; /* más ancho aún */
 }
 
 /* filas pares gris claro */
