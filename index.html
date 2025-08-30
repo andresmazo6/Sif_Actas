@@ -1,35 +1,34 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta charset="UTF-8">
   <title>Seguimiento de Actas</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <!-- Encabezado institucional -->
   <header>
     <h1>Seguimiento de Actas</h1>
     <p>Secretaría de Infraestructura Física · Alcaldía de Medellín</p>
   </header>
 
-  <!-- Navegación -->
   <nav>
     <button onclick="showTab('consulta')">Consulta de Actividades</button>
     <button onclick="testPing()">Ping backend</button>
   </nav>
 
-  <!-- Contenido dinámico -->
   <main id="content">
-    <p>Bienvenido. Selecciona una opción del menú para comenzar.</p>
+    <p>Bienvenido. Selecciona una opción del menú.</p>
   </main>
 
-  <!-- Pie de página -->
-  <footer>
-    © 2025 Secretaría de Infraestructura Física - Alcaldía de Medellín
-  </footer>
+  <!-- Modal -->
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal()">&times;</span>
+      <div id="modal-summary"></div>
+      <div id="modal-body"></div>
+    </div>
+  </div>
 
-  <!-- Lógica frontend -->
   <script src="app.js"></script>
 </body>
 </html>
