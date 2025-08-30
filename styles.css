@@ -1,17 +1,56 @@
-body {
-  font-family: system-ui, Arial, sans-serif;
-  margin: 20px;
-  background: #fafafa;
-  color: #111;
+/* ============================= */
+/* TABLA DE ACTIVIDADES VISUAL   */
+/* ============================= */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-top: 1em;
+  font-size: 13px;
+  line-height: 1.4;
+  table-layout: fixed; /* distribución fija para controlar anchos */
 }
-h1 {
-  margin-bottom: 0.2em;
-}
-button {
-  padding: 10px 14px;
-  border: none;
-  border-radius: 8px;
-  background: #111;
+
+thead th {
+  position: sticky;
+  top: 0;
+  background: #004B87;
   color: #fff;
-  cursor: pointer;
+  z-index: 2;
+  text-align: center;
+  border: 1px solid #ccc;
+  padding: 6px;
+}
+
+/* columnas con bordes */
+td {
+  border: 1px solid #ccc;
+  padding: 6px;
+  text-align: center;
+  vertical-align: middle;
+  white-space: nowrap; /* evita que todo se rompa en filas muy grandes */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ajustar descripción */
+td:nth-child(2), th:nth-child(2) {
+  text-align: left;
+  white-space: normal;
+  word-wrap: break-word;
+  width: 300px; /* más ancho */
+}
+
+/* filas pares gris claro */
+tbody tr:nth-child(even) {
+  background: #f9f9f9;
+}
+
+/* hover */
+tbody tr:hover {
+  background: #eef6ff;
+}
+
+/* altura fija filas */
+tbody td {
+  height: 38px;
 }
