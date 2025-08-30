@@ -1,9 +1,7 @@
 // URL del backend en Apps Script (reemplaza TU_URL cuando lo tengas)
 const GAS_URL = "https://script.google.com/macros/s/AKfycbyMqxg4HLB4DMpInjop4ruu2Kr5jBtIuTzVjpcURfQayWAoFHwMivNBHCHhvt2YbzH82w/exec";
 // ========================================
-// CONFIGURACIÓN DEL BACKEND
-// ========================================
-const GAS_URL = "https://script.google.com/macros/s/TU_URL/exec";
+
 let activitiesData = []; // Data completa
 let contractsList = [];  // Lista de contratos para filtros
 
@@ -11,10 +9,17 @@ let contractsList = [];  // Lista de contratos para filtros
 // NAVEGACIÓN ENTRE PESTAÑAS
 // ========================================
 function showTab(tab) {
-  if (tab === "consulta") {
-    loadActivities();
-  } else {
-    document.getElementById("content").innerHTML = "<p>Selecciona una opción del menú.</p>";
+  const container = document.getElementById("content");
+
+  switch(tab) {
+    case "consulta":
+      loadActivities(); // ✅ asegura que carga actividades
+      break;
+    case "ping":
+      testPing();       // ✅ ping backend
+      break;
+    default:
+      container.innerHTML = "<p>Selecciona una opción del menú.</p>";
   }
 }
 
