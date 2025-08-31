@@ -1,5 +1,5 @@
 // URL del backend en Apps Script (reemplaza TU_URL cuando lo tengas)
-const GAS_URL = "https://script.google.com/macros/s/AKfycbxnFo7CPknrP4dP2URT82T83taMzv4pQ6XUReG0D8kW6DLR4PwC-8VAQGqRHApqTymfaw/exec";
+const GAS_URL = "https://script.google.com/macros/s/AKfycbw8fJbOEeW7nt4gPsuaUa3cX2fSIx0f7m6L10EIbyLNd2PGRgW-9pvCFQB6bM_gJLC1Hw/exec";
 
 // ROUTER DE PESTAÑAS
 // =========================
