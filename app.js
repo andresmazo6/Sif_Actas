@@ -1,229 +1,132 @@
 // URL del backend en Apps Script (reemplaza TU_URL cuando lo tengas)
-const GAS_URL = "https://script.google.com/macros/s/AKfycbxdLkcW_eUlazv4EHR8ruqTOOwLLIUNz2fNmDsKRtlWqHZl_2_X6vGL4vZWCupAyq2LMQ/exec";
+const GAS_URL = "https://script.google.com/macros/s/AKfycbxnFo7CPknrP4dP2URT82T83taMzv4pQ6XUReG0D8kW6DLR4PwC-8VAQGqRHApqTymfaw/exec";
 
-let activitiesData = []; // Data completa
-
-// ========================================
-// NAVEGACIÓN ENTRE PESTAÑAS
-// ========================================
-function showTab(tab) {
-  const container = document.getElementById("content");
-
-  switch(tab) {
-    case "consulta":
-      loadActivities();
-      break;
-    case "ping":
-      testPing();
-      break;
-    default:
-      container.innerHTML = "<p>Selecciona una opción del menú.</p>";
+/****************************************************
+ * CONFIGURACIÓN GENERAL
+ ****************************************************/
+const CONFIG = {
+  SHEETS: {
+    contracts: ["contract_id","name","description","start_date","end_date","currency","status"],
+    activities: ["activity_id","contract_id","item_code","group_name","description","unit","initial_qty","unit_price","active"],
+    actas: ["acta_id","contract_id","acta_no","acta_date","notes"],
+    executions: ["execution_id","acta_id","activity_id","qty_executed","value_executed","comments"],
+    redistributions: ["redist_id","contract_id","activity_id","date","type","qty_delta","value_delta","notes"],
+    roles: ["user_email","role","display_name","active"],
+    v_activity_status: [
+      "contract_id","activity_id","item_code","description","unit","unit_price",
+      "initial_qty","initial_value","executed_qty","executed_value",
+      "redistributed_qty","redistributed_value","remaining_qty","remaining_value",
+      "last_acta_no","last_acta_date","group_name"
+    ]
   }
+};
+
+/****************************************************
+ * HELPERS
+ ****************************************************/
+function getSS(){ return SpreadsheetApp.getActive(); }
+function getSheet(name){
+  const ss = getSS();
+  let sh = ss.getSheetByName(name);
+  if (!sh) sh = ss.insertSheet(name);
+  return sh;
+}
+function ensureHeader_(sheetName, headers){
+  const sh = getSheet(sheetName);
+  const current = sh.getRange(1,1,1,headers.length).getValues()[0];
+  if (JSON.stringify(current) !== JSON.stringify(headers)){
+    sh.clear();
+    sh.getRange(1,1,1,headers.length).setValues([headers]);
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+function readAll_(sheetName){
+  const headers = CONFIG.SHEETS[sheetName];
+  const sh = ensureHeader_(sheetName, headers);
+  const last = sh.getLastRow();
+  if (last < 2) return [];
+  const data = sh.getRange(2,1,last-1,headers.length).getDisplayValues(); // ✅ texto plano
+  return data.map(r => Object.fromEntries(headers.map((h,i)=>[h, r[i]])));
+}
+function append_(sheetName, rec){
+  const headers = CONFIG.SHEETS[sheetName];
+  const sh = ensureHeader_(sheetName, headers);
+  const row = headers.map(h => rec[h] !== undefined ? rec[h] : "");
+  sh.appendRow(row);
+  return rec;
+}
+function uuid_(){ return Utilities.getUuid(); }
+function toNum(v){ if(!v) return 0; return Number(String(v).replace(/,/g,""))||0; }
+function sum(a){ return a.reduce((x,y)=>x+y,0); }
+function round2(x){ return Math.round((x+Number.EPSILON)*100)/100; }
+
+/****************************************************
+ * ROUTER
+ ****************************************************/
+function cors_(out){ return out.setMimeType(ContentService.MimeType.JSON); }
+function doOptions(e){ return cors_(ContentService.createTextOutput("")); }
+function doGet(e){
+  const p = e.parameter||{};
+  const fn = (p.fn||"ping").toLowerCase();
+  let res;
+  try{
+    switch(fn){
+      case "ping": res = { ok:true, now:new Date().toISOString() }; break;
+      case "list_activities": res = { ok:true, rows: readAll_("activities") }; break;
+      case "list_actas": res = { ok:true, rows: readAll_("actas") }; break;
+      case "list_executions": res = { ok:true, rows: readAll_("executions") }; break;
+      case "status": res = statusByActivity_(p); break;
+      case "actas_by_activity": res = actasByActivity_(p); break;
+      default: res = { ok:false, error:"Función desconocida: "+fn };
+    }
+  } catch(err){ res = { ok:false, error:String(err) }; }
+  return cors_(ContentService.createTextOutput(JSON.stringify(res)));
+}
+function doPost(e){
+  const body = e.postData && e.postData.contents ? JSON.parse(e.postData.contents) : {};
+  const fn = (body.fn||"").toLowerCase();
+  let res;
+  try{
+    switch(fn){
+      case "create_acta": res = createActa_(body.data); break;
+      default: res = { ok:false, error:"Función POST desconocida: "+fn };
+    }
+  } catch(err){ res = { ok:false, error:String(err) }; }
+  return cors_(ContentService.createTextOutput(JSON.stringify(res)));
 }
 
-// ========================================
-// CARGA DE ACTIVIDADES
-// ========================================
-async function loadActivities() {
-  const container = document.getElementById("content");
-  container.innerHTML = "<p>Cargando actividades...</p>";
+/****************************************************
+ * CREAR ACTA NUEVA
+ ****************************************************/
+function createActa_(data){
+  // 1. generar id y nro acta
+  const actas = readAll_("actas");
+  const nextNo = actas.length > 0 ? Math.max(...actas.map(a=>Number(a.acta_no)))+1 : 1;
+  const actaId = "ACTA-" + String(nextNo).padStart(2,"0");
 
-  try {
-    const r = await fetch(`${GAS_URL}?fn=status`);
-    const j = await r.json();
-    if (!j.ok) throw new Error(j.error);
+  const acta = {
+    acta_id: actaId,
+    contract_id: data.contract_id,
+    acta_no: nextNo,
+    acta_date: data.acta_date,
+    notes: data.notes || ""
+  };
+  append_("actas", acta);
 
-    activitiesData = j.rows;
-
-    // Pintamos filtros + tabla vacía
-    container.innerHTML = `
-      <h2>Consulta de Actividades</h2>
-      <div id="filterBar">
-        <label>Ítem: <input type="text" id="filterItem" size="8" placeholder="Ej: 1.2"></label>
-        <label>Descripción: <input type="text" id="filterDesc" size="20" placeholder="Buscar palabra..."></label>
-        <button onclick="applyFilters()">Aplicar</button>
-        <button onclick="clearFilters()">Limpiar</button>
-      </div>
-      <div id="tableWrapper">
-        <div id="tableContainer"></div>
-      </div>
-    `;
-
-    // Render inicial con todos
-    renderActivities(activitiesData);
-
-  } catch (e) {
-    container.innerHTML = `<p style="color:red">Error: ${e.message}</p>`;
-  }
-}
-
-// ========================================
-// RENDER TABLA PRINCIPAL
-// ========================================
-function renderActivities(data) {
-  const container = document.getElementById("tableContainer");
-
-  let html = `
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Contrato</th>
-          <th>Ítem</th>
-          <th>Descripción</th>
-          <th>Unidad</th>
-          <th>Cant. Inicial</th>
-          <th>Valor Inicial</th>
-          <th>Cant. Ejecutada</th>
-          <th>Valor Ejecutado</th>
-          <th>Redistrib. Cant.</th>
-          <th>Redistrib. Valor</th>
-          <th>Pendiente Cant.</th>
-          <th>Pendiente Valor</th>
-          <th>Últ. Acta</th>
-          <th>Fecha Últ. Acta</th>
-          <th>Detalle</th>
-        </tr>
-      </thead>
-      <tbody>
-  `;
-
-  data.forEach((a, i) => {
-    html += `
-      <tr>
-        <td>${i + 1}</td>
-        <td>${a.contract_id || ""}</td>
-        <td>${a.item_code || ""}</td>   <!-- ✅ aquí aseguramos item_code real -->
-        <td style="text-align:left">${a.description || ""}</td>
-        <td>${a.unit || ""}</td>
-        <td>${a.initial_qty ?? ""}</td>
-        <td>${a.initial_value ?? ""}</td>
-        <td>${a.executed_qty ?? ""}</td>
-        <td>${a.executed_value ?? ""}</td>
-        <td>${a.redistributed_qty ?? ""}</td>
-        <td>${a.redistributed_value ?? ""}</td>
-        <td>${a.remaining_qty ?? ""}</td>
-        <td>${a.remaining_value ?? ""}</td>
-        <td>${a.last_acta_no ?? ""}</td>
-        <td>${a.last_acta_date ?? ""}</td>
-        <td><button onclick="showActas('${a.activity_id}')">Ver</button></td>
-      </tr>
-    `;
+  // 2. registrar ejecuciones
+  const execs = data.executions || [];
+  execs.forEach(e=>{
+    const exec = {
+      execution_id: uuid_(),
+      acta_id: actaId,
+      activity_id: e.activity_id,
+      qty_executed: e.qty_executed,
+      value_executed: round2(toNum(e.qty_executed) * toNum(e.unit_price)),
+      comments: e.comments || ""
+    };
+    append_("executions", exec);
   });
 
-  html += "</tbody></table>";
-  container.innerHTML = html;
-}
-
-// ========================================
-// FILTROS
-// ========================================
-function applyFilters() {
-  const item = document.getElementById("filterItem").value.toLowerCase();
-  const desc = document.getElementById("filterDesc").value.toLowerCase();
-
-  let filtered = [...activitiesData];
-
-  if (item) {
-    filtered = filtered.filter(a => (a.item_code || "").toLowerCase().includes(item));
-  }
-
-  if (desc) {
-    filtered = filtered.filter(a => (a.description || "").toLowerCase().includes(desc));
-  }
-
-  renderActivities(filtered);
-}
-
-function clearFilters() {
-  document.getElementById("filterItem").value = "";
-  document.getElementById("filterDesc").value = "";
-  renderActivities(activitiesData);
-}
-
-// ========================================
-// MODAL ACTAS
-// ========================================
-async function showActas(activityId) {
-  const modal = document.getElementById("modal");
-  const summary = document.getElementById("modal-summary");
-  const body = document.getElementById("modal-body");
-
-  const act = activitiesData.find(a => a.activity_id === activityId);
-  if (!act) return;
-
-  summary.innerHTML = `
-    <p><b>Contrato:</b> ${act.contract_id} | <b>Ítem:</b> ${act.item_code} | <b>Descripción:</b> ${act.description}</p>
-    <p>
-      <b>Inicial:</b> ${act.initial_qty} (${act.initial_value}) |
-      <b>Ejecutado:</b> ${act.executed_qty} (${act.executed_value}) |
-      <b>Redistribuido:</b> ${act.redistributed_qty} (${act.redistributed_value}) |
-      <b>Pendiente:</b> ${act.remaining_qty} (${act.remaining_value})
-    </p>
-  `;
-
-  body.innerHTML = "<p>Cargando actas...</p>";
-  modal.style.display = "block";
-
-  try {
-    const r = await fetch(`${GAS_URL}?fn=actas_by_activity&activity_id=${activityId}`);
-    const j = await r.json();
-    if (!j.ok) throw new Error(j.error);
-
-    if (j.rows.length === 0) {
-      body.innerHTML = "<p>No hay actas registradas para esta actividad.</p>";
-      return;
-    }
-
-    let html = `
-      <table>
-        <thead>
-          <tr>
-            <th>N° Acta</th>
-            <th>Fecha</th>
-            <th>Notas</th>
-          </tr>
-        </thead>
-        <tbody>
-    `;
-
-    j.rows.forEach(ac => {
-      html += `
-        <tr>
-          <td>${ac.acta_no || ""}</td>
-          <td>${ac.acta_date || ""}</td>
-          <td style="text-align:left">${ac.notes || ""}</td>
-        </tr>
-      `;
-    });
-
-    html += "</tbody></table>";
-    body.innerHTML = html;
-
-  } catch (e) {
-    body.innerHTML = `<p style="color:red">Error: ${e.message}</p>`;
-  }
-}
-
-function closeModal() {
-  document.getElementById("modal").style.display = "none";
-}
-
-// ========================================
-// TEST PING
-// ========================================
-async function testPing() {
-  const container = document.getElementById("content");
-  container.innerHTML = "<p>Probando conexión...</p>";
-
-  try {
-    const r = await fetch(`${GAS_URL}?fn=ping`);
-    const j = await r.json();
-    container.innerHTML = `
-      <h2>Ping al backend</h2>
-      <pre>${JSON.stringify(j, null, 2)}</pre>
-    `;
-  } catch (e) {
-    container.innerHTML = `<p style="color:red">Error: ${e.message}</p>`;
-  }
+  return { ok:true, acta_id: actaId, acta_no: nextNo, saved_execs: execs.length };
 }
