@@ -1,6 +1,5 @@
 // URL del backend en Apps Script (reemplaza TU_URL cuando lo tengas)
 const GAS_URL = "https://script.google.com/macros/s/AKfycbyMqxg4HLB4DMpInjop4ruu2Kr5jBtIuTzVjpcURfQayWAoFHwMivNBHCHhvt2YbzH82w/exec";
-// ========================================
 
 let activitiesData = []; // Data completa
 
@@ -94,7 +93,7 @@ function renderActivities(data) {
       <tr>
         <td>${i + 1}</td>
         <td>${a.contract_id || ""}</td>
-        <td>${a.item_code || ""}</td>
+        <td>${a.item_code || ""}</td>   <!-- ✅ aquí aseguramos item_code real -->
         <td style="text-align:left">${a.description || ""}</td>
         <td>${a.unit || ""}</td>
         <td>${a.initial_qty ?? ""}</td>
@@ -117,7 +116,7 @@ function renderActivities(data) {
 }
 
 // ========================================
-// FILTROS AVANZADOS
+// FILTROS
 // ========================================
 function applyFilters() {
   const item = document.getElementById("filterItem").value.toLowerCase();
@@ -143,7 +142,7 @@ function clearFilters() {
 }
 
 // ========================================
-// MODAL DE ACTAS
+// MODAL ACTAS
 // ========================================
 async function showActas(activityId) {
   const modal = document.getElementById("modal");
