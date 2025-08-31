@@ -1,11 +1,7 @@
 // URL del backend en Apps Script (reemplaza TU_URL cuando lo tengas)
 const GAS_URL = "https://script.google.com/macros/s/AKfycbxnFo7CPknrP4dP2URT82T83taMzv4pQ6XUReG0D8kW6DLR4PwC-8VAQGqRHApqTymfaw/exec";
 // =========================
-// CONFIG
-// =========================
-const GAS_URL = "TU_URL_DEL_APPSCRIPT"; // ⚠️ reemplaza por la URL publicada de tu Apps Script
 
-// =========================
 // ROUTER DE PESTAÑAS
 // =========================
 function showTab(tab){
