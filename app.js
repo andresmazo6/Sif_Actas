@@ -1,7 +1,12 @@
 // URL del backend en Apps Script (reemplaza TU_URL cuando lo tengas)
 const GAS_URL = "https://script.google.com/macros/s/AKfycbxnFo7CPknrP4dP2URT82T83taMzv4pQ6XUReG0D8kW6DLR4PwC-8VAQGqRHApqTymfaw/exec";
 // =========================
+// =========================
+// CONFIG
+// =========================
+const GAS_URL = "TU_URL_DEL_APPSCRIPT"; // ⚠️ reemplaza por la URL publicada de tu Apps Script
 
+// =========================
 // ROUTER DE PESTAÑAS
 // =========================
 function showTab(tab){
@@ -36,23 +41,24 @@ async function renderActividades(main){
     const j = await resp.json();
     if(!j.ok){ main.innerHTML="<p>Error cargando actividades</p>"; return; }
 
-    let html = `<table class="data"><thead>
+    let html = `<table class="data sticky"><thead>
       <tr>
         <th>#</th><th>Contrato</th><th>Ítem</th><th>Descripción</th>
-        <th>Unidad</th><th>Cant. Inicial</th><th>Valor Inicial</th>
-        <th>Cant. Ejecutada</th><th>Valor Ejecutado</th>
+        <th>Unidad</th><th>Asignada</th><th>Valor Inicial</th>
+        <th>Ejecutada</th><th>Valor Ejecutado</th>
         <th>Redistrib. Cant.</th><th>Redistrib. Valor</th>
         <th>Pendiente Cant.</th><th>Pendiente Valor</th>
         <th>Últ. Acta</th><th>Fecha Últ. Acta</th>
       </tr></thead><tbody>`;
     j.rows.forEach((r,i)=>{
+      const asignada = Number(r.initial_qty) + Number(r.redistributed_qty);
       html += `<tr>
         <td>${i+1}</td>
         <td>${r.contract_id}</td>
         <td>${r.item_code}</td>
         <td>${r.description}</td>
         <td>${r.unit}</td>
-        <td>${r.initial_qty}</td>
+        <td>${asignada}</td>
         <td>${r.initial_value}</td>
         <td>${r.executed_qty}</td>
         <td>${r.executed_value}</td>
@@ -90,38 +96,53 @@ async function renderNuevaActa(main){
 // cargar actividades en el formulario de acta
 async function loadActividadesForm(){
   const contrato = document.getElementById("contrato").value;
-  const resp = await fetch(`${GAS_URL}?fn=list_activities`);
+  const resp = await fetch(`${GAS_URL}?fn=status&contract_id=${contrato}`);
   const j = await resp.json();
   if(!j.ok){ alert("Error cargando actividades"); return; }
 
-  const acts = j.rows.filter(a=>a.contract_id===contrato);
-  let html = `<table class="data"><thead>
+  const acts = j.rows;
+  let html = `<table class="data sticky"><thead>
     <tr>
       <th>Ítem</th><th>Descripción</th><th>Unidad</th>
-      <th>Cant. Inicial</th><th>Valor Unitario</th>
+      <th>Asignada</th><th>Ejecutada</th><th>Pendiente</th>
+      <th>Valor Unitario</th>
       <th>Cant. Ejecutada (nueva)</th><th>Valor Ejecutado</th>
+      <th>Nuevo Acumulado</th>
     </tr></thead><tbody>`;
+
   acts.forEach(a=>{
-    html += `<tr data-activity="${a.activity_id}" data-unit="${a.unit}" data-unitprice="${a.unit_price}">
+    const asignada = (Number(a.initial_qty) + Number(a.redistributed_qty));
+    const ejecutada = Number(a.executed_qty);
+    const pendiente = Number(a.remaining_qty);
+
+    html += `<tr data-activity="${a.activity_id}" data-unitprice="${a.unit_price}" data-ejecutada="${ejecutada}">
       <td>${a.item_code}</td>
       <td>${a.description}</td>
       <td>${a.unit}</td>
-      <td>${a.initial_qty}</td>
+      <td>${asignada}</td>
+      <td>${ejecutada}</td>
+      <td>${pendiente}</td>
       <td>${a.unit_price}</td>
-      <td><input type="number" min="0" step="any" class="qty"></td>
+      <td><input type="number" min="0" max="${pendiente}" step="any" class="qty"></td>
       <td class="val">0</td>
+      <td class="nuevo">${ejecutada}</td>
     </tr>`;
   });
   html += `</tbody></table>`;
   document.getElementById("detalle").innerHTML = html;
 
-  // recalcular valor al digitar
+  // recalcular valor y nuevo acumulado al digitar
   document.querySelectorAll(".qty").forEach(inp=>{
     inp.addEventListener("input",()=>{
       const tr = inp.closest("tr");
       const price = Number(tr.dataset.unitprice)||0;
+      const ejecutadaPrev = Number(tr.dataset.ejecutada)||0;
       const q = Number(inp.value)||0;
+
+      // valor ejecutado en esta acta
       tr.querySelector(".val").textContent = (q*price).toFixed(2);
+      // nuevo acumulado = ejecutada previa + lo nuevo
+      tr.querySelector(".nuevo").textContent = (ejecutadaPrev+q).toFixed(2);
     });
   });
 }
@@ -170,4 +191,3 @@ async function guardarActa(){
     alert("Error en conexión: "+err);
   }
 }
-
