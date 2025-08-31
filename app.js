@@ -3,7 +3,6 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbyMqxg4HLB4DMpInjop4ruu
 // ========================================
 
 let activitiesData = []; // Data completa
-let contractsList = [];  // Lista de contratos para filtros
 
 // ========================================
 // NAVEGACIÓN ENTRE PESTAÑAS
@@ -13,10 +12,10 @@ function showTab(tab) {
 
   switch(tab) {
     case "consulta":
-      loadActivities(); // ✅ asegura que carga actividades
+      loadActivities();
       break;
     case "ping":
-      testPing();       // ✅ ping backend
+      testPing();
       break;
     default:
       container.innerHTML = "<p>Selecciona una opción del menú.</p>";
@@ -36,20 +35,13 @@ async function loadActivities() {
     if (!j.ok) throw new Error(j.error);
 
     activitiesData = j.rows;
-    contractsList = [...new Set(activitiesData.map(a => a.contract_id))]; // contratos únicos
 
     // Pintamos filtros + tabla vacía
     container.innerHTML = `
       <h2>Consulta de Actividades</h2>
       <div id="filterBar">
-        <label>Contrato: 
-          <select id="filterContract">
-            <option value="">Todos</option>
-            ${contractsList.map(c => `<option value="${c}">${c}</option>`).join("")}
-          </select>
-        </label>
-        <label>Ítem desde: <input type="text" id="filterItemFrom" size="5"></label>
-        <label>Ítem hasta: <input type="text" id="filterItemTo" size="5"></label>
+        <label>Ítem: <input type="text" id="filterItem" size="8" placeholder="Ej: 1.2"></label>
+        <label>Descripción: <input type="text" id="filterDesc" size="20" placeholder="Buscar palabra..."></label>
         <button onclick="applyFilters()">Aplicar</button>
         <button onclick="clearFilters()">Limpiar</button>
       </div>
@@ -128,24 +120,25 @@ function renderActivities(data) {
 // FILTROS AVANZADOS
 // ========================================
 function applyFilters() {
-  const cId = document.getElementById("filterContract").value;
-  const from = document.getElementById("filterItemFrom").value;
-  const to = document.getElementById("filterItemTo").value;
+  const item = document.getElementById("filterItem").value.toLowerCase();
+  const desc = document.getElementById("filterDesc").value.toLowerCase();
 
   let filtered = [...activitiesData];
 
-  if (cId) filtered = filtered.filter(a => a.contract_id === cId);
+  if (item) {
+    filtered = filtered.filter(a => (a.item_code || "").toLowerCase().includes(item));
+  }
 
-  if (from) filtered = filtered.filter(a => a.item_code >= from);
-  if (to)   filtered = filtered.filter(a => a.item_code <= to);
+  if (desc) {
+    filtered = filtered.filter(a => (a.description || "").toLowerCase().includes(desc));
+  }
 
   renderActivities(filtered);
 }
 
 function clearFilters() {
-  document.getElementById("filterContract").value = "";
-  document.getElementById("filterItemFrom").value = "";
-  document.getElementById("filterItemTo").value = "";
+  document.getElementById("filterItem").value = "";
+  document.getElementById("filterDesc").value = "";
   renderActivities(activitiesData);
 }
 
