@@ -4,29 +4,38 @@
   <meta charset="UTF-8">
   <title>Seguimiento de Actas</title>
   <link rel="stylesheet" href="styles.css">
+  <style>
+    body { font-family: Arial, sans-serif; margin:20px; }
+    nav { margin-bottom:20px; }
+    nav button { margin-right:10px; padding:8px 15px; font-weight:bold; cursor:pointer; }
+    h1 { color:#003366; }
+    h2 { margin-top:20px; color:#004080; }
+    table { border-collapse:collapse; width:100%; margin-top:10px; }
+    th, td { border:1px solid #ccc; padding:6px; font-size:14px; vertical-align:top; }
+    th { background:#003366; color:white; position:sticky; top:0; z-index:2; }
+    .form label { margin-right:15px; display:inline-block; margin-bottom:10px; }
+    input[type="text"], input[type="number"], input[type="date"] {
+      padding:5px; margin:3px; border:1px solid #ccc; border-radius:4px;
+    }
+    .btn-primario { background:#ff6600; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; }
+    .btn-secundario { background:#666; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; }
+    .btn-primario:hover, .btn-secundario:hover { opacity:0.85; }
+    .data input.qty { width:80px; }
+  </style>
 </head>
 <body>
-  <header>
-    <h1>Seguimiento de Actas</h1>
-    <p>Secretaría de Infraestructura Física · Alcaldía de Medellín</p>
-  </header>
+
+  <h1>Seguimiento de Actas</h1>
+  <p>Secretaría de Infraestructura Física · Alcaldía de Medellín</p>
 
   <nav>
-    <button onclick="showTab('consulta')">Consulta de Actividades</button>
-    <button onclick="testPing()">Ping backend</button>
+    <button onclick="showTab('actividades')">Consulta de Actividades</button>
+    <button onclick="showTab('nueva_acta')">Nueva Acta</button>
+    <button onclick="showTab('ping')">Ping backend</button>
   </nav>
 
-  <main id="content">
-    <p>Bienvenido. Selecciona una opción del menú.</p>
-  </main>
-
-  <!-- Modal -->
-  <div id="modal" class="modal">
-    <div class="modal-content">
-      <span class="close" onclick="closeModal()">&times;</span>
-      <div id="modal-summary"></div>
-      <div id="modal-body"></div>
-    </div>
+  <div id="main">
+    <p>Seleccione una pestaña.</p>
   </div>
 
   <script src="app.js"></script>
