@@ -1,33 +1,21 @@
 // URL del backend en Apps Script (reemplaza TU_URL cuando lo tengas)
 const GAS_URL = "https://script.google.com/macros/s/AKfycbw8fJbOEeW7nt4gPsuaUa3cX2fSIx0f7m6L10EIbyLNd2PGRgW-9pvCFQB6bM_gJLC1Hw/exec";
 
-// ROUTER DE PESTAÑAS
-// =========================
-function showTab(tab){
+
+// ==========================================
+// RENDER PRINCIPAL
+// ==========================================
+async function renderMain(tab){
   const main = document.getElementById("main");
-  if(tab==="nueva_acta"){ renderNuevaActa(main); return; }
-  if(tab==="actividades"){ renderActividades(main); return; }
-  if(tab==="ping"){ pingBackend(main); return; }
-  main.innerHTML = "<p>Seleccione una pestaña</p>";
+  if(tab==="actividades") return renderActividades(main);
+  if(tab==="nueva_acta") return renderNuevaActa(main);
+  if(tab==="ping") return renderPing(main);
+  main.innerHTML = "<p>Seleccione una pestaña.</p>";
 }
 
-// =========================
-// PING BACKEND
-// =========================
-async function pingBackend(main){
-  main.innerHTML = "<p>Conectando...</p>";
-  try{
-    const resp = await fetch(`${GAS_URL}?fn=ping`);
-    const j = await resp.json();
-    main.innerHTML = `<pre>${JSON.stringify(j,null,2)}</pre>`;
-  } catch(err){
-    main.innerHTML = `<p style="color:red;">Error: ${err}</p>`;
-  }
-}
-
-// =========================
+// ==========================================
 // CONSULTA DE ACTIVIDADES
-// =========================
+// ==========================================
 async function renderActividades(main){
   main.innerHTML = "<h2>Consulta de Actividades</h2><p>Cargando...</p>";
   try{
@@ -35,24 +23,23 @@ async function renderActividades(main){
     const j = await resp.json();
     if(!j.ok){ main.innerHTML="<p>Error cargando actividades</p>"; return; }
 
-    let html = `<table class="data sticky"><thead>
+    let html = `<table class="data"><thead>
       <tr>
         <th>#</th><th>Contrato</th><th>Ítem</th><th>Descripción</th>
-        <th>Unidad</th><th>Asignada</th><th>Valor Inicial</th>
-        <th>Ejecutada</th><th>Valor Ejecutado</th>
+        <th>Unidad</th><th>Cant. Inicial</th><th>Valor Inicial</th>
+        <th>Cant. Ejecutada</th><th>Valor Ejecutado</th>
         <th>Redistrib. Cant.</th><th>Redistrib. Valor</th>
         <th>Pendiente Cant.</th><th>Pendiente Valor</th>
         <th>Últ. Acta</th><th>Fecha Últ. Acta</th>
       </tr></thead><tbody>`;
     j.rows.forEach((r,i)=>{
-      const asignada = Number(r.initial_qty) + Number(r.redistributed_qty);
       html += `<tr>
         <td>${i+1}</td>
         <td>${r.contract_id}</td>
         <td>${r.item_code}</td>
         <td>${r.description}</td>
         <td>${r.unit}</td>
-        <td>${asignada}</td>
+        <td>${r.initial_qty}</td>
         <td>${r.initial_value}</td>
         <td>${r.executed_qty}</td>
         <td>${r.executed_value}</td>
@@ -71,117 +58,151 @@ async function renderActividades(main){
   }
 }
 
-// =========================
+// ==========================================
 // NUEVA ACTA DE PAGO
-// =========================
+// ==========================================
 async function renderNuevaActa(main){
-  main.innerHTML = `<h2>Nueva Acta de Pago</h2>
-    <div class="form">
-      <label>Contrato: <input id="contrato" value="C-001"></label>
-      <label>Fecha: <input id="fecha" type="date"></label>
-      <label>Notas: <input id="notas" type="text"></label>
+  main.innerHTML = `
+    <h2>Nueva Acta de Pago</h2>
+    <div>
+      Contrato: <input id="acta-contract" value="C-001" />
+      Consecutivo: <span id="acta-next">?</span>
+      Fecha: <input id="acta-date" type="date" />
     </div>
-    <button class="btn-primario" onclick="loadActividadesForm()">Cargar actividades</button>
-    <div id="detalle"></div>
-    <button class="btn-primario" onclick="guardarActa()">Guardar Acta</button>
+    <button onclick="cargarActividadesNuevaActa()">Cargar actividades</button>
+    <button onclick="guardarNuevaActa()">Guardar Acta</button>
+    <table class="data" id="tabla-acta">
+      <thead>
+        <tr>
+          <th>Ítem</th>
+          <th>Descripción</th>
+          <th>Unidad</th>
+          <th>Asignada</th>
+          <th>Ejecutada</th>
+          <th>Pendiente</th>
+          <th>Cant. a ejecutar</th>
+          <th>Nuevo Pendiente</th>
+          <th>Nota</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
   `;
+
+  // obtener número de la próxima acta
+  try {
+    const resp = await fetch(`${GAS_URL}?fn=list_actas`);
+    const j = await resp.json();
+    if(j.ok){
+      const next = j.rows.length+1;
+      document.getElementById("acta-next").textContent = next;
+    }
+  } catch(e){
+    document.getElementById("acta-next").textContent = "?";
+  }
 }
 
-// cargar actividades en el formulario de acta
-async function loadActividadesForm(){
-  const contrato = document.getElementById("contrato").value;
-  const resp = await fetch(`${GAS_URL}?fn=status&contract_id=${contrato}`);
-  const j = await resp.json();
-  if(!j.ok){ alert("Error cargando actividades"); return; }
+async function cargarActividadesNuevaActa(){
+  const cid = document.getElementById("acta-contract").value.trim();
+  const tbody = document.querySelector("#tabla-acta tbody");
+  tbody.innerHTML = "<tr><td colspan='9'>Cargando...</td></tr>";
 
-  const acts = j.rows;
-  let html = `<table class="data sticky"><thead>
-    <tr>
-      <th>Ítem</th><th>Descripción</th><th>Unidad</th>
-      <th>Asignada</th><th>Ejecutada</th><th>Pendiente</th>
-      <th>Valor Unitario</th>
-      <th>Cant. Ejecutada (nueva)</th><th>Valor Ejecutado</th>
-      <th>Nuevo Acumulado</th>
-    </tr></thead><tbody>`;
+  try {
+    const resp = await fetch(`${GAS_URL}?fn=status&contract_id=${cid}`);
+    const j = await resp.json();
+    if(!j.ok){ alert("Error cargando actividades"); return; }
 
-  acts.forEach(a=>{
-    const asignada = (Number(a.initial_qty) + Number(a.redistributed_qty));
-    const ejecutada = Number(a.executed_qty);
-    const pendiente = Number(a.remaining_qty);
+    let html = "";
+    j.rows.forEach(r=>{
+      const asignada = (Number(r.initial_qty)||0) + (Number(r.redistributed_qty)||0);
+      const ejecutada = Number(r.executed_qty)||0;
+      const pendiente = asignada - ejecutada;
 
-    html += `<tr data-activity="${a.activity_id}" data-unitprice="${a.unit_price}" data-ejecutada="${ejecutada}">
-      <td>${a.item_code}</td>
-      <td>${a.description}</td>
-      <td>${a.unit}</td>
-      <td>${asignada}</td>
-      <td>${ejecutada}</td>
-      <td>${pendiente}</td>
-      <td>${a.unit_price}</td>
-      <td><input type="number" min="0" max="${pendiente}" step="any" class="qty"></td>
-      <td class="val">0</td>
-      <td class="nuevo">${ejecutada}</td>
-    </tr>`;
-  });
-  html += `</tbody></table>`;
-  document.getElementById("detalle").innerHTML = html;
-
-  // recalcular valor y nuevo acumulado al digitar
-  document.querySelectorAll(".qty").forEach(inp=>{
-    inp.addEventListener("input",()=>{
-      const tr = inp.closest("tr");
-      const price = Number(tr.dataset.unitprice)||0;
-      const ejecutadaPrev = Number(tr.dataset.ejecutada)||0;
-      const q = Number(inp.value)||0;
-
-      // valor ejecutado en esta acta
-      tr.querySelector(".val").textContent = (q*price).toFixed(2);
-      // nuevo acumulado = ejecutada previa + lo nuevo
-      tr.querySelector(".nuevo").textContent = (ejecutadaPrev+q).toFixed(2);
+      html += `<tr>
+        <td>${r.item_code}</td>
+        <td>${r.description}</td>
+        <td>${r.unit}</td>
+        <td>${asignada}</td>
+        <td>${ejecutada}</td>
+        <td>${pendiente}</td>
+        <td><input type="number" class="qty-input" 
+              data-act="${r.activity_id}" data-pend="${pendiente}" value="0" /></td>
+        <td class="nuevo-pendiente">${pendiente}</td>
+        <td><input type="text" class="nota-input" data-act="${r.activity_id}" placeholder="Nota" /></td>
+      </tr>`;
     });
-  });
+    tbody.innerHTML = html;
+
+    // eventos para recalcular pendiente
+    document.querySelectorAll(".qty-input").forEach(inp=>{
+      inp.addEventListener("input", e=>{
+        const qty = Number(e.target.value)||0;
+        const pend = Number(e.target.dataset.pend)||0;
+        const nuevo = pend - qty;
+        const td = e.target.closest("tr").querySelector(".nuevo-pendiente");
+        td.textContent = nuevo;
+        if(nuevo<0){
+          td.style.color="red";
+        } else {
+          td.style.color="black";
+        }
+      });
+    });
+
+  } catch(err){
+    alert("Error cargando actividades\n"+err);
+  }
 }
 
-// guardar acta
-async function guardarActa(){
-  const contrato = document.getElementById("contrato").value;
-  const fecha = document.getElementById("fecha").value;
-  const notas = document.getElementById("notas").value;
-
+async function guardarNuevaActa(){
+  const cid = document.getElementById("acta-contract").value.trim();
+  const fecha = document.getElementById("acta-date").value;
+  const next = document.getElementById("acta-next").textContent;
   const rows = [];
-  document.querySelectorAll("#detalle tbody tr").forEach(tr=>{
-    const q = Number(tr.querySelector(".qty").value)||0;
-    if(q>0){
-      rows.push({
-        activity_id: tr.dataset.activity,
-        qty_executed: q,
-        unit_price: Number(tr.dataset.unitprice)
-      });
+
+  let error=false;
+  document.querySelectorAll("#tabla-acta tbody tr").forEach(tr=>{
+    const qty = Number(tr.querySelector(".qty-input").value)||0;
+    const pend = Number(tr.querySelector(".qty-input").dataset.pend)||0;
+    const nota = tr.querySelector(".nota-input").value||"";
+    const actId = tr.querySelector(".qty-input").dataset.act;
+    if(qty>0){
+      if(qty>pend){ error=true; tr.style.background="#fdd"; }
+      rows.push({ activity_id: actId, qty_executed: qty, comments: nota });
     }
   });
+  if(error){ alert("Hay cantidades mayores a lo pendiente. Corrige antes de guardar."); return; }
 
-  if(rows.length===0){
-    alert("Debe ingresar al menos una actividad ejecutada");
-    return;
-  }
-
-  const body = {
-    fn: "create_acta",
-    data: { contract_id: contrato, acta_date: fecha, notes: notas, executions: rows }
+  const payload = {
+    fn:"create_execution",
+    contract_id:cid,
+    acta_no: next,
+    acta_date: fecha,
+    data: rows
   };
 
   try{
     const resp = await fetch(GAS_URL,{
       method:"POST",
-      body: JSON.stringify(body)
+      body: JSON.stringify(payload)
     });
     const j = await resp.json();
-    if(j.ok){
-      alert("✅ Acta creada: "+j.acta_id+" con "+j.saved_execs+" ejecuciones");
-      showTab("actividades");
-    } else {
-      alert("Error: "+j.error);
-    }
+    if(j.ok){ alert("Acta guardada correctamente"); }
+    else{ alert("Error al guardar: "+j.error); }
+  }catch(err){
+    alert("Error guardando\n"+err);
+  }
+}
+
+// ==========================================
+// PING BACKEND
+// ==========================================
+async function renderPing(main){
+  try{
+    const resp = await fetch(`${GAS_URL}?fn=ping`);
+    const j = await resp.json();
+    main.innerHTML = `<pre>${JSON.stringify(j,null,2)}</pre>`;
   } catch(err){
-    alert("Error en conexión: "+err);
+    main.innerHTML = `<p style="color:red;">Error: ${err}</p>`;
   }
 }
