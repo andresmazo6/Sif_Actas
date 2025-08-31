@@ -1,25 +1,99 @@
 /* ============================= */
+/* ESTILOS GENERALES             */
+/* ============================= */
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+  background: #fafafa;
+}
+
+header {
+  margin-bottom: 20px;
+}
+
+h1, h2 {
+  color: #004B87; /* azul institucional */
+}
+
+button {
+  cursor: pointer;
+}
+
+/* ============================= */
+/* FILTROS                       */
+/* ============================= */
+#filterBar {
+  margin-bottom: 12px;
+  padding: 10px;
+  background: #f4f6f8;
+  border-radius: 6px;
+  font-size: 14px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+#filterBar label {
+  margin-right: 6px;
+}
+
+#filterBar input {
+  padding: 5px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+#filterBar button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+#filterBar button:first-of-type {
+  background: #F07C00; /* naranja */
+  color: #fff;
+}
+
+#filterBar button:first-of-type:hover {
+  background: #d96b00;
+}
+
+#filterBar button:last-of-type {
+  background: #666;
+  color: #fff;
+}
+
+#filterBar button:last-of-type:hover {
+  background: #444;
+}
+
+/* ============================= */
 /* TABLA DE ACTIVIDADES VISUAL   */
 /* ============================= */
 #tableWrapper {
-  overflow-x: auto; /* scroll horizontal si hay muchas columnas */
+  max-height: 70vh;     /* altura máxima visible */
+  overflow-y: auto;     /* scroll vertical */
+  overflow-x: auto;     /* scroll horizontal */
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #fff;
 }
 
 table {
   border-collapse: collapse;
   width: 100%;
-  margin-top: 1em;
   font-size: 13px;
   line-height: 1.4;
   table-layout: fixed;
 }
 
 thead th {
-  position: sticky;
+  position: sticky;   /* 👈 esto congela la fila de títulos */
   top: 0;
   background: #004B87;
   color: #fff;
-  z-index: 2;
+  z-index: 5;
   text-align: center;
   border: 1px solid #ccc;
   padding: 6px;
@@ -71,32 +145,38 @@ tbody td {
 }
 
 /* ============================= */
-/* FILTROS                       */
+/* MODAL                         */
 /* ============================= */
-#filterBar {
-  margin-bottom: 12px;
-  padding: 8px;
-  background: #f4f6f8;
-  border-radius: 6px;
-  font-size: 14px;
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 10;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background: rgba(0,0,0,0.6);
 }
-#filterBar label {
-  margin-right: 12px;
+
+.modal-content {
+  background: #fff;
+  margin: 5% auto;
+  padding: 20px;
+  border-radius: 8px;
+  width: 80%;
+  max-width: 900px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
 }
-#filterBar select,
-#filterBar input {
-  padding: 4px 6px;
-  margin-left: 4px;
-}
-#filterBar button {
-  margin-left: 6px;
-  padding: 5px 10px;
-  background: #F07C00;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
+
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 24px;
+  font-weight: bold;
   cursor: pointer;
 }
-#filterBar button:hover {
-  background: #d96b00;
+
+.close:hover {
+  color: #000;
 }
