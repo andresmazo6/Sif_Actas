@@ -1,5 +1,5 @@
 // URL del backend en Apps Script (reemplaza TU_URL cuando lo tengas)
-const GAS_URL = "https://script.google.com/macros/s/AKfycbx0SQxUYN4nRwJa2dqomB05cL8mjFnZbR13Dcy1uNeab__NDFPb0z73dfcHsvEDYItUSw/exec";
+const GAS_URL = "https://script.google.com/macros/s/AKfycbxdLkcW_eUlazv4EHR8ruqTOOwLLIUNz2fNmDsKRtlWqHZl_2_X6vGL4vZWCupAyq2LMQ/exec";
 
 let activitiesData = []; // Data completa
 
